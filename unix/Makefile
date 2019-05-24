@@ -872,12 +872,12 @@ lynx:		unix_make
 
 # Macintosh MacOS X (Unix-compatible enviroment), using standard compiler
 macosx:	unix_make
-	$(MAKE) unzips CFLAGS="-O3 -Wall -DBSD" LF2=""
+	$(MAKE) unzips CFLAGS="-O3 -Wall -DBSD -DZIP64_SUPPORT -Wno-format-security" LF2=""
 	$(STRIP) $(UNZIPS)
 
 # Macintosh MacOS X (Unix-compatible enviroment), using gcc
 macosx_gcc:	unix_make
-	$(MAKE) unzips CC=gcc CFLAGS="-O3 -Wall -DBSD" LF2=""
+	$(MAKE) unzips CC=gcc CFLAGS="-O3 -Wall -DBSD -DZIP64_SUPPORT Wno-format-security" LF2=""
 	$(STRIP) $(UNZIPS)
 
 # Minix 1.5 PC for the 386.  Invoke as is to use default cc, or as "make
