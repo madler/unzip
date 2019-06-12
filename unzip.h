@@ -645,6 +645,7 @@ typedef struct _Uzp_cdir_Rec {
 #define PK_NOZIP           9   /* zipfile not found */
 #define PK_PARAM          10   /* bad or illegal parameters specified */
 #define PK_FIND           11   /* no files found */
+#define PK_BOMB           12   /* likely zip bomb */
 #define PK_DISK           50   /* disk full */
 #define PK_EOF            51   /* unexpected EOF */
 

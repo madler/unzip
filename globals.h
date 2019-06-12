@@ -260,12 +260,15 @@ typedef struct Globals {
     ecdir_rec       ecrec;         /* used in unzip.c, extract.c */
     z_stat   statbuf;              /* used by main, mapname, check_for_newer */
 
+    int zip64;                     /* true if Zip64 info in extra field */
+
     int      mem_mode;
     uch      *outbufptr;           /* extract.c static */
     ulg      outsize;              /* extract.c static */
     int      reported_backslash;   /* extract.c static */
     int      disk_full;
     int      newfile;
+    void     **cover;              /* used in extract.c for bomb detection */
 
     int      didCRlast;            /* fileio static */
     ulg      numlines;             /* fileio static: number of lines printed */

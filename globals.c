@@ -181,6 +181,7 @@ Uz_Globs *globalsCtor()
 # if (!defined(NO_TIMESTAMPS))
     uO.D_flag=1;    /* default to '-D', no restoration of dir timestamps */
 # endif
+    G.cover = NULL;     /* not allocated yet */
 #endif
 
     uO.lflag=(-1);

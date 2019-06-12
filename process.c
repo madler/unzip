@@ -637,6 +637,13 @@ void free_G_buffers(__G)     /* releases all memory allocated in global vars */
     }
 #endif
 
+    /* Free the cover span list and the cover structure. */
+    if (G.cover != NULL) {
+        free(*(G.cover));
+        free(G.cover);
+        G.cover = NULL;
+    }
+
 } /* end function free_G_buffers() */
 
 
@@ -1890,6 +1897,8 @@ int getZip64Data(__G__ ef_buf, ef_len)
     but it means that this procedure is only called in one place.
   ---------------------------------------------------------------------------*/
 
+    G.zip64 = FALSE;
+
     if (ef_len == 0 || ef_buf == NULL)
         return PK_COOL;
 
@@ -1927,6 +1936,8 @@ int getZip64Data(__G__ ef_buf, ef_len)
             G.crec.disk_number_start = (zuvl_t)makelong(offset + ef_buf);
             offset += sizeof(G.crec.disk_number_start);
           }
+
+          G.zip64 = TRUE;
         }
 
         /* Skip this extra field block */

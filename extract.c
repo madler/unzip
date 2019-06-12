@@ -319,6 +319,125 @@ static ZCONST char Far UnsupportedExtraField[] =
   "\nerror:  unsupported extra-field compression type (%u)--skipping\n";
 static ZCONST char Far BadExtraFieldCRC[] =
   "error [%s]:  bad extra-field CRC %08lx (should be %08lx)\n";
+static ZCONST char Far NotEnoughMemCover[] =
+  "error: not enough memory for bomb detection\n";
+static ZCONST char Far OverlappedComponents[] =
+  "error: invalid zip file with overlapped components (possible zip bomb)\n";
+
+
+
+
+
+/* A growable list of spans. */
+typedef zoff_t bound_t;
+typedef struct {
+    bound_t beg;        /* start of the span */
+    bound_t end;        /* one past the end of the span */
+} span_t;
+typedef struct {
+    span_t *span;       /* allocated, distinct, and sorted list of spans */
+    size_t num;         /* number of spans in the list */
+    size_t max;         /* allocated number of spans (num <= max) */
+} cover_t;
+
+/*
+ * Return the index of the first span in cover whose beg is greater than val.
+ * If there is no such span, then cover->num is returned.
+ */
+static size_t cover_find(cover, val)
+    cover_t *cover;
+    bound_t val;
+{
+    size_t lo = 0, hi = cover->num;
+    while (lo < hi) {
+        size_t mid = (lo + hi) >> 1;
+        if (val < cover->span[mid].beg)
+            hi = mid;
+        else
+            lo = mid + 1;
+    }
+    return hi;
+}
+
+/* Return true if val lies within any one of the spans in cover. */
+static int cover_within(cover, val)
+    cover_t *cover;
+    bound_t val;
+{
+    size_t pos = cover_find(cover, val);
+    return pos > 0 && val < cover->span[pos - 1].end;
+}
+
+/*
+ * Add a new span to the list, but only if the new span does not overlap any
+ * spans already in the list. The new span covers the values beg..end-1. beg
+ * must be less than end.
+ *
+ * Keep the list sorted and merge adjacent spans. Grow the allocated space for
+ * the list as needed. On success, 0 is returned. If the new span overlaps any
+ * existing spans, then 1 is returned and the new span is not added to the
+ * list. If the new span is invalid because beg is greater than or equal to
+ * end, then -1 is returned. If the list needs to be grown but the memory
+ * allocation fails, then -2 is returned.
+ */
+static int cover_add(cover, beg, end)
+    cover_t *cover;
+    bound_t beg;
+    bound_t end;
+{
+    size_t pos;
+    int prec, foll;
+
+    if (beg >= end)
+    /* The new span is invalid. */
+        return -1;
+
+    /* Find where the new span should go, and make sure that it does not
+       overlap with any existing spans. */
+    pos = cover_find(cover, beg);
+    if ((pos > 0 && beg < cover->span[pos - 1].end) ||
+        (pos < cover->num && end > cover->span[pos].beg))
+        return 1;
+
+    /* Check for adjacencies. */
+    prec = pos > 0 && beg == cover->span[pos - 1].end;
+    foll = pos < cover->num && end == cover->span[pos].beg;
+    if (prec && foll) {
+        /* The new span connects the preceding and following spans. Merge the
+           following span into the preceding span, and delete the following
+           span. */
+        cover->span[pos - 1].end = cover->span[pos].end;
+        cover->num--;
+        memmove(cover->span + pos, cover->span + pos + 1,
+                (cover->num - pos) * sizeof(span_t));
+    }
+    else if (prec)
+        /* The new span is adjacent only to the preceding span. Extend the end
+           of the preceding span. */
+        cover->span[pos - 1].end = end;
+    else if (foll)
+        /* The new span is adjacent only to the following span. Extend the
+           beginning of the following span. */
+        cover->span[pos].beg = beg;
+    else {
+        /* The new span has gaps between both the preceding and the following
+           spans. Assure that there is room and insert the span.  */
+        if (cover->num == cover->max) {
+            size_t max = cover->max == 0 ? 16 : cover->max << 1;
+            span_t *span = realloc(cover->span, max * sizeof(span_t));
+            if (span == NULL)
+                return -2;
+            cover->span = span;
+            cover->max = max;
+        }
+        memmove(cover->span + pos + 1, cover->span + pos,
+                (cover->num - pos) * sizeof(span_t));
+        cover->num++;
+        cover->span[pos].beg = beg;
+        cover->span[pos].end = end;
+    }
+    return 0;
+}
 
 
 
@@ -373,6 +492,29 @@ int extract_or_test_files(__G)    /* return PK-type error code */
         }
     }
 #endif /* !SFX || SFX_EXDIR */
+
+    /* One more: initialize cover structure for bomb detection. Start with a
+       span that covers the central directory though the end of the file. */
+    if (G.cover == NULL) {
+        G.cover = malloc(sizeof(cover_t));
+        if (G.cover == NULL) {
+            Info(slide, 0x401, ((char *)slide,
+              LoadFarString(NotEnoughMemCover)));
+            return PK_MEM;
+        }
+        ((cover_t *)G.cover)->span = NULL;
+        ((cover_t *)G.cover)->max = 0;
+    }
+    ((cover_t *)G.cover)->num = 0;
+    if ((G.extra_bytes != 0 &&
+         cover_add((cover_t *)G.cover, 0, G.extra_bytes) != 0) ||
+        cover_add((cover_t *)G.cover,
+                  G.extra_bytes + G.ecrec.offset_start_central_directory,
+                  G.ziplen) != 0) {
+        Info(slide, 0x401, ((char *)slide,
+          LoadFarString(NotEnoughMemCover)));
+        return PK_MEM;
+    }
 
 /*---------------------------------------------------------------------------
     The basic idea of this function is as follows.  Since the central di-
@@ -591,7 +733,8 @@ int extract_or_test_files(__G)    /* return PK-type error code */
             if (error > error_in_archive)
                 error_in_archive = error;
             /* ...and keep going (unless disk full or user break) */
-            if (G.disk_full > 1 || error_in_archive == IZ_CTRLC) {
+            if (G.disk_full > 1 || error_in_archive == IZ_CTRLC ||
+                error == PK_BOMB) {
                 /* clear reached_end to signal premature stop ... */
                 reached_end = FALSE;
                 /* ... and cancel scanning the central directory */
@@ -1060,6 +1203,11 @@ static int extract_or_test_entrylist(__G__ numchunk,
 
         /* seek_zipf(__G__ pInfo->offset);  */
         request = G.pInfo->offset + G.extra_bytes;
+        if (cover_within((cover_t *)G.cover, request)) {
+            Info(slide, 0x401, ((char *)slide,
+              LoadFarString(OverlappedComponents)));
+            return PK_BOMB;
+        }
         inbuf_offset = request % INBUFSIZ;
         bufstart = request - inbuf_offset;
 
@@ -1591,6 +1739,18 @@ reprompt:
             return IZ_CTRLC;        /* cancel operation by user request */
         }
 #endif
+        error = cover_add((cover_t *)G.cover, request,
+                          G.cur_zipfile_bufstart + (G.inptr - G.inbuf));
+        if (error < 0) {
+            Info(slide, 0x401, ((char *)slide,
+              LoadFarString(NotEnoughMemCover)));
+            return PK_MEM;
+        }
+        if (error != 0) {
+            Info(slide, 0x401, ((char *)slide,
+              LoadFarString(OverlappedComponents)));
+            return PK_BOMB;
+        }
 #ifdef MACOS  /* MacOS is no preemptive OS, thus call event-handling by hand */
         UserStop();
 #endif
@@ -1992,6 +2152,34 @@ static int extract_or_test_member(__G)    /* return PK-type error code */
     }
 
     undefer_input(__G);
+
+    if ((G.lrec.general_purpose_bit_flag & 8) != 0) {
+        /* skip over data descriptor (harder than it sounds, due to signature
+         * ambiguity)
+         */
+#       define SIG 0x08074b50
+#       define LOW 0xffffffff
+        uch buf[12];
+        unsigned shy = 12 - readbuf((char *)buf, 12);
+        ulg crc = shy ? 0 : makelong(buf);
+        ulg clen = shy ? 0 : makelong(buf + 4);
+        ulg ulen = shy ? 0 : makelong(buf + 8); /* or high clen if ZIP64 */
+        if (crc == SIG &&                       /* if not SIG, no signature */
+            (G.lrec.crc32 != SIG ||             /* if not SIG, have signature */
+             (clen == SIG &&                    /* if not SIG, no signature */
+              ((G.lrec.csize & LOW) != SIG ||   /* if not SIG, have signature */
+               (ulen == SIG &&                  /* if not SIG, no signature */
+                (G.zip64 ? G.lrec.csize >> 32 : G.lrec.ucsize) != SIG
+                                                /* if not SIG, have signature */
+                )))))
+                   /* skip four more bytes to account for signature */
+                   shy += 4 - readbuf((char *)buf, 4);
+        if (G.zip64)
+            shy += 8 - readbuf((char *)buf, 8); /* skip eight more for ZIP64 */
+        if (shy)
+            error = PK_ERR;
+    }
+
     return error;
 
 } /* end function extract_or_test_member() */
