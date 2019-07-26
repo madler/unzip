@@ -1408,6 +1408,10 @@ static int find_ecrec64(__G__ searchlen)         /* return PK-class error */
 
     /* Now, we are (almost) sure that we have a Zip64 archive. */
     G.ecrec.have_ecr64 = 1;
+    G.ecrec.ec_start -= ECLOC64_SIZE+4;
+    G.ecrec.ec64_start = ecrec64_start_offset;
+    G.ecrec.ec64_end = ecrec64_start_offset +
+                       12 + makeint64(&byterec[ECREC64_LENGTH]);
 
     /* Update the "end-of-central-dir offset" for later checks. */
     G.real_ecrec_offset = ecrec64_start_offset;
@@ -1542,6 +1546,8 @@ static int find_ecrec(__G__ searchlen)          /* return PK-class error */
       makelong(&byterec[OFFSET_START_CENTRAL_DIRECTORY]);
     G.ecrec.zipfile_comment_length =
       makeword(&byterec[ZIPFILE_COMMENT_LENGTH]);
+    G.ecrec.ec_start = G.real_ecrec_offset;
+    G.ecrec.ec_end = G.ecrec.ec_start + 22 + G.ecrec.zipfile_comment_length;
 
     /* Now, we have to read the archive comment, BEFORE the file pointer
        is moved away backwards to seek for a Zip64 ECLOC64 structure.

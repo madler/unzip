@@ -493,8 +493,11 @@ int extract_or_test_files(__G)    /* return PK-type error code */
     }
 #endif /* !SFX || SFX_EXDIR */
 
-    /* One more: initialize cover structure for bomb detection. Start with a
-       span that covers the central directory though the end of the file. */
+    /* One more: initialize cover structure for bomb detection. Start with
+       spans that cover any extra bytes at the start, the central directory,
+       the end of central directory record (including the Zip64 end of central
+       directory locator, if present), and the Zip64 end of central directory
+       record, if present. */
     if (G.cover == NULL) {
         G.cover = malloc(sizeof(cover_t));
         if (G.cover == NULL) {
@@ -506,14 +509,24 @@ int extract_or_test_files(__G)    /* return PK-type error code */
         ((cover_t *)G.cover)->max = 0;
     }
     ((cover_t *)G.cover)->num = 0;
-    if ((G.extra_bytes != 0 &&
-         cover_add((cover_t *)G.cover, 0, G.extra_bytes) != 0) ||
-        cover_add((cover_t *)G.cover,
+    if (cover_add((cover_t *)G.cover,
                   G.extra_bytes + G.ecrec.offset_start_central_directory,
-                  G.ziplen) != 0) {
+                  G.extra_bytes + G.ecrec.offset_start_central_directory +
+                  G.ecrec.size_central_directory) != 0) {
         Info(slide, 0x401, ((char *)slide,
           LoadFarString(NotEnoughMemCover)));
         return PK_MEM;
+    }
+    if ((G.extra_bytes != 0 &&
+         cover_add((cover_t *)G.cover, 0, G.extra_bytes) != 0) ||
+        (G.ecrec.have_ecr64 &&
+         cover_add((cover_t *)G.cover, G.ecrec.ec64_start,
+                   G.ecrec.ec64_end) != 0) ||
+        cover_add((cover_t *)G.cover, G.ecrec.ec_start,
+                  G.ecrec.ec_end) != 0) {
+        Info(slide, 0x401, ((char *)slide,
+          LoadFarString(OverlappedComponents)));
+        return PK_BOMB;
     }
 
 /*---------------------------------------------------------------------------
