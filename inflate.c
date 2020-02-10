@@ -677,7 +677,7 @@ int UZinflate(__G__ is_defl64)
             if ((!repeated_buf_err) && (G.dstrm.avail_in == 0)) {
                 /* when detecting this problem for the first time,
                    try to provide one fake byte beyond "EOF"... */
-                G.dstrm.next_in = "";
+                G.dstrm.next_in = (Bytef *)"";
                 G.dstrm.avail_in = 1;
                 repeated_buf_err = TRUE;
             } else

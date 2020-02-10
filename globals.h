@@ -236,6 +236,7 @@ typedef struct Globals {
     uch       *inbuf;               /* input buffer (any size is OK) */
     uch       *inptr;               /* pointer into input buffer */
     int       incnt;
+    int      disk_full;
 
 #ifndef FUNZIP
     ulg       bitbuf;
@@ -266,7 +267,6 @@ typedef struct Globals {
     uch      *outbufptr;           /* extract.c static */
     ulg      outsize;              /* extract.c static */
     int      reported_backslash;   /* extract.c static */
-    int      disk_full;
     int      newfile;
     void     **cover;              /* used in extract.c for bomb detection */
 
