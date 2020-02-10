@@ -21,8 +21,8 @@
 #  define UZ_BETALEVEL      "h03 BETA"
 #  define UZ_VERSION_DATE   "17 Apr 09"         /* internal beta version */
 #else
-#  define UZ_BETALEVEL      ""
-#  define UZ_VERSION_DATE   "20 April 2009"     /* official release version */
+#  define UZ_BETALEVEL      "b1"                /* bomb detection version 1 */
+#  define UZ_VERSION_DATE   "9 Feb 2020"        /* official release version */
 #  define RELEASE
 #endif
 
