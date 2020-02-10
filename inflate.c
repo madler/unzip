@@ -700,7 +700,7 @@ int UZinflate(__G__ is_defl64)
       G.dstrm.total_out));
 
     G.inptr = (uch *)G.dstrm.next_in;
-    G.incnt = (G.inbuf + INBUFSIZ) - G.inptr;  /* reset for other routines */
+    G.incnt -= G.inptr - G.inbuf;       /* reset for other routines */
 
 uzinflate_cleanup_exit:
     err = inflateReset(&G.dstrm);
