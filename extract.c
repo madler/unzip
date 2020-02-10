@@ -340,6 +340,10 @@ typedef struct {
     size_t max;         /* allocated number of spans (num <= max) */
 } cover_t;
 
+static size_t cover_find OF((cover_t *, bound_t));
+static int cover_within OF((cover_t *, bound_t));
+static int cover_add OF((cover_t *, bound_t, bound_t));
+
 /*
  * Return the index of the first span in cover whose beg is greater than val.
  * If there is no such span, then cover->num is returned.
