@@ -678,6 +678,9 @@
 
 #define UNZIP_BZ2VERS   46
 #ifdef ZIP64_SUPPORT
+# ifndef LARGE_FILE_SUPPORT
+#  define LARGE_FILE_SUPPORT
+# endif
 # ifdef USE_BZIP2
 #  define UNZIP_VERSION   UNZIP_BZ2VERS
 # else
