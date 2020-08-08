@@ -2030,8 +2030,16 @@ int do_string(__G__ length, option)   /* return PK-type error code */
     length of the string:  if zero, we're already done.
   ---------------------------------------------------------------------------*/
 
-    if (!length)
+    if (!length) {
+        if (option == EXTRA_FIELD) {
+            /*
+             * With this shortcut, we are not calling getZip64Data, but we need
+             * to call it to at least reset G.zip64.
+             */
+            getZip64Data(__G__ NULL, 0);
+        }
         return PK_COOL;
+    }
 
     switch (option) {
 
