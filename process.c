@@ -1903,8 +1903,6 @@ int getZip64Data(__G__ ef_buf, ef_len)
     but it means that this procedure is only called in one place.
   ---------------------------------------------------------------------------*/
 
-    G.zip64 = FALSE;
-
     if (ef_len == 0 || ef_buf == NULL)
         return PK_COOL;
 
@@ -1943,7 +1941,7 @@ int getZip64Data(__G__ ef_buf, ef_len)
             offset += sizeof(G.crec.disk_number_start);
           }
 
-          G.zip64 = TRUE;
+          G.pInfo->zip64 = TRUE;
         }
 
         /* Skip this extra field block */

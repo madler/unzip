@@ -658,6 +658,7 @@ int extract_or_test_files(__G)    /* return PK-type error code */
                     break;
                 }
             }
+            G.pInfo->zip64 = FALSE;
             if ((error = do_string(__G__ G.crec.extra_field_length,
                 EXTRA_FIELD)) != 0)
             {
@@ -2187,12 +2188,12 @@ static int extract_or_test_member(__G)    /* return PK-type error code */
              (clen == SIG &&                    /* if not SIG, no signature */
               ((G.lrec.csize & LOW) != SIG ||   /* if not SIG, have signature */
                (ulen == SIG &&                  /* if not SIG, no signature */
-                (G.zip64 ? G.lrec.csize >> 32 : G.lrec.ucsize) != SIG
+                (G.pInfo->zip64 ? G.lrec.csize >> 32 : G.lrec.ucsize) != SIG
                                                 /* if not SIG, have signature */
                 )))))
                    /* skip four more bytes to account for signature */
                    shy += 4 - readbuf((char *)buf, 4);
-        if (G.zip64)
+        if (G.pInfo->zip64)
             shy += 8 - readbuf((char *)buf, 8); /* skip eight more for ZIP64 */
         if (shy)
             error = PK_ERR;
