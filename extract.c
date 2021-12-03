@@ -658,7 +658,6 @@ int extract_or_test_files(__G)    /* return PK-type error code */
                     break;
                 }
             }
-            G.pInfo->zip64 = FALSE;
             if ((error = do_string(__G__ G.crec.extra_field_length,
                 EXTRA_FIELD)) != 0)
             {
@@ -1376,6 +1375,7 @@ static int extract_or_test_entrylist(__G__ numchunk,
             free(G.extra_field);
             G.extra_field = (uch *)NULL;
         }
+        G.pInfo->zip64 = FALSE;
         if ((error =
              do_string(__G__ G.lrec.extra_field_length, EXTRA_FIELD)) != 0)
         {
