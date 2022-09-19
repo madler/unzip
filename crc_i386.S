@@ -302,3 +302,7 @@ _crc32:                         /* ulg crc32(ulg crc, uch *buf, extent len) */
 #endif /* i386 || _i386 || _I386 || __i386 */
 
 #endif /* !USE_ZLIB && !CRC_TABLE_ONLY */
+
+#if defined(__ELF__) && defined(__linux__)
+               .section .note.GNU-stack,"",%progbits
+#endif
