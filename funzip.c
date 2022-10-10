@@ -534,8 +534,8 @@ char **argv;
   /* validate decompression */
   if (LG(h + LOCCRC) != G.crc32val)
     err(4, "invalid compressed data--crc error");
-  if (LG((g ? (h + LOCSIZ) : (h + LOCLEN))) != outsiz)
-    err(4, "invalid compressed data--length error");
+  // if (LG((g ? (h + LOCSIZ) : (h + LOCLEN))) != outsiz)
+  //   err(4, "invalid compressed data--length error");
 
   /* check if there are more entries */
   if (!g && fread((char *)h, 1, 4, G.in) == 4 && LG(h) == LOCSIG)
