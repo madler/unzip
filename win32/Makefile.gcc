@@ -128,7 +128,7 @@ LD_RELEASE_OPT = -s
 
 # Prefered target CPU (instruction scheduling optimized for...)
 ifndef CC_CPU_OPT
-CC_CPU_OPT = -mcpu=pentiumpro
+CC_CPU_OPT =
 endif
 
 # Smallest code  (-Os is new since EGC 1.1, use -O1 for 2.8.1 and earlier)
