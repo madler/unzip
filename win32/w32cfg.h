@@ -184,7 +184,7 @@
 #endif
 #define DATE_SEPCHAR  dateseparator()
 #define lenEOL        2
-#define PutNativeEOL  {*q++ = native(CR); *q++ = native(LF);}
+#define PutNativeEOL  {*q++ = native(CHR_CR); *q++ = native(CHR_LF);}
 
 #if (defined(__RSXNT__) && !defined(HAVE_MKTIME))
 #  define HAVE_MKTIME           /* use mktime() in time conversion routines */
