@@ -2296,11 +2296,11 @@ static int _flush_varlen(__G__ rawbuf, size, final_flag)
 #define RECORD_END(c, f)                                                \
 (    ( ORG_DOS || G.pInfo->textmode ) && c==CTRLZ                       \
   || ( f == FAB$C_STMLF && c==LF )                                      \
-  || ( f == FAB$C_STMCR || ORG_DOS || G.pInfo->textmode ) && c==CR      \
-  || ( f == FAB$C_STM && (c==CR || c==LF || c==FF || c==VT) )           \
+  || ( f == FAB$C_STMCR || ORG_DOS || G.pInfo->textmode ) && c==CHR_CR  \
+  || ( f == FAB$C_STM && (c==CHR_CR || c==CHR_LF || c==FF || c==VT) )   \
 )
 #else
-#   define  RECORD_END(c, f)   ((c) == LF || (c) == (CR))
+#   define  RECORD_END(c, f)   ((c) == CHR_LF || (c) == (CHR_CR))
 #endif
 
 static unsigned find_eol(p, n, l)
@@ -2330,7 +2330,7 @@ static unsigned find_eol(p, n, l)
     if ( n > 1 )
     {
         *l = 1;
-        if ( ( q[0] == CR && q[1] == LF ) || ( q[0] == LF && q[1] == CR ) )
+        if ( ( q[0] == CHR_CR && q[1] == CHR_LF ) || ( q[0] == CHR_LF && q[1] == CHR_CR ) )
             *l = 2;
     }
 
@@ -2386,8 +2386,8 @@ static int _flush_stream(__G__ rawbuf, size, final_flag)
             recsize = loccnt - 1;
             complete = 1;
 
-            if ( (got_eol == CR && rawbuf[0] == LF) ||
-                 (got_eol == LF && rawbuf[0] == CR) )
+            if ( (got_eol == CHR_CR && rawbuf[0] == CHR_LF) ||
+                 (got_eol == CHR_LF && rawbuf[0] == CHR_CR) )
                 end = 1;
 
             got_eol = 0;
@@ -2456,7 +2456,7 @@ static int _flush_stream(__G__ rawbuf, size, final_flag)
 #ifdef undef
         if (uO.cflag)
             /* skip CR's at the beginning of record */
-            while (start < size && rawbuf[start] == CR)
+            while (start < size && rawbuf[start] == CHR_CR)
                 ++start;
 #endif
 
